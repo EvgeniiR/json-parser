@@ -14,7 +14,6 @@ data JsonValue = JsonNull
                | JsonObject [(String, JsonValue)]
                deriving (Show, Eq)
 
--- todo no proper error reporting
 newtype Parser a = Parser
     { runParser :: String -> Maybe (String, a)
     }
