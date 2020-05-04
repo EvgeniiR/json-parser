@@ -8,8 +8,7 @@ import Control.Applicative
 
 data JsonValue = JsonNull
                | JsonBool Bool
-               | JsonInteger Integer
-               | JsonFloat Float
+               | JsonNumber Double
                | JsonString String
                | JsonArray [JsonValue]
                | JsonObject [(String, JsonValue)]
@@ -40,7 +39,7 @@ instance Applicative Parser where
             Just (input'', f a)
 
 jsonValue :: Parser JsonValue
-jsonValue = ws *> (jsonNull <|> jsonBool <|> jsonString <|> jsonInteger <|> jsonArray <|> jsonObject) <* ws
+jsonValue = ws *> (jsonNull <|> jsonBool <|> jsonString <|> jsonNumber <|> jsonArray <|> jsonObject) <* ws
 
 jsonNull :: Parser JsonValue
 jsonNull = JsonNull <$ stringP "null"
@@ -51,10 +50,6 @@ jsonBool = jsonTrue <|> jsonFalse
     mkJsonBool str b = JsonBool b <$ stringP str
     jsonTrue = mkJsonBool "true" True
     jsonFalse = mkJsonBool "false" False
-
-jsonInteger :: Parser JsonValue
-jsonInteger = f <$> notNull (spanP isDigit)
-    where f ds = JsonInteger (read ds :: Integer)
 
 jsonString :: Parser JsonValue
 jsonString = JsonString <$> stringLiteral
@@ -75,11 +70,29 @@ jsonObject = JsonObject
                               <*> (ws *> charP ':' <* ws)
                               <*> jsonValue
 
--- todo no support for exponential notation
---jsonFloat :: Parser JsonValue
---jsonFloat = f <$> notNull (spanP floatCh)
---    where f ds = JsonFloat (read ds :: Float)
---          floatCh ch = isDigit ch || ch == '.'
+jsonNumber :: Parser JsonValue
+jsonNumber = JsonNumber <$> doubleLiteral
+
+doubleLiteral :: Parser Double
+doubleLiteral =
+  doubleFromParts
+    <$> (minus <|> pure 1)
+    <*> (read <$> digits)
+    <*> ((read <$> (('0':) <$> ((:) <$> charP '.' <*> digits))) <|> pure 0)
+    <*> ((e *> ((*) <$> (plus <|> minus <|> pure 1) <*> (read <$> digits))) <|> pure 0)
+  where
+    digits = notNull (spanP isDigit)
+    minus = (-1) <$ charP '-'
+    plus = 1 <$ charP '+'
+    e = charP 'e' <|> charP 'E'
+
+doubleFromParts :: Integer  -- sign
+                -> Integer  -- integral part
+                -> Double   -- decimal part
+                -> Integer  -- exponent
+                -> Double
+doubleFromParts sign int dec expo =
+  fromIntegral sign * (fromIntegral int + dec) * (10 ^^ expo)
 
 sepBy :: Parser a -> Parser b -> Parser [b]
 sepBy sep element = ((:) <$> element <*> many (sep *> element)) <|> pure []
