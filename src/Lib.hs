@@ -8,7 +8,8 @@ import Control.Applicative
 
 data JsonValue = JsonNull
                | JsonBool Bool
-               | JsonNumber Integer -- todo support for float
+               | JsonInteger Integer
+               | JsonFloat Float
                | JsonString String
                | JsonArray [JsonValue]
                | JsonObject [(String, JsonValue)]
@@ -39,7 +40,7 @@ instance Applicative Parser where
             Just (input'', f a)
 
 jsonValue :: Parser JsonValue
-jsonValue = jsonNull <|> jsonBool <|> jsonString <|> jsonNumber <|> jsonArray <|> jsonObject
+jsonValue = jsonNull <|> jsonBool <|> jsonString <|> jsonInteger <|> jsonArray <|> jsonObject
 
 jsonNull :: Parser JsonValue
 jsonNull = JsonNull <$ stringP "null"
@@ -51,9 +52,9 @@ jsonBool = f <$> (stringP "true" <|> stringP "false")
           -- This should never happen
           f _       = undefined
 
-jsonNumber :: Parser JsonValue
-jsonNumber = f <$> notNull (spanP isDigit)
-    where f ds = JsonNumber (read ds :: Integer)
+jsonInteger :: Parser JsonValue
+jsonInteger = f <$> notNull (spanP isDigit)
+    where f ds = JsonInteger (read ds :: Integer)
 
 jsonString :: Parser JsonValue
 jsonString = JsonString <$> stringLiteral
@@ -73,6 +74,9 @@ jsonObject = JsonObject
                               <$> stringLiteral
                               <*> (ws *> charP ':' <* ws)
                               <*> jsonValue
+
+--jsonFloat :: Parser JsonValue
+--jsonFloat = JsonFloat <$> undefined
 
 
 sepBy :: Parser a -> Parser b -> Parser [b]
