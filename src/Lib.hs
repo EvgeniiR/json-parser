@@ -46,11 +46,11 @@ jsonNull :: Parser JsonValue
 jsonNull = JsonNull <$ stringP "null"
 
 jsonBool :: Parser JsonValue
-jsonBool = f <$> (stringP "true" <|> stringP "false")
-    where f "true"  = JsonBool True
-          f "false" = JsonBool False
-          -- This should never happen
-          f _       = undefined
+jsonBool = jsonTrue <|> jsonFalse
+  where
+    mkJsonBool str b = JsonBool b <$ stringP str
+    jsonTrue = mkJsonBool "true" True
+    jsonFalse = mkJsonBool "false" False
 
 jsonInteger :: Parser JsonValue
 jsonInteger = f <$> notNull (spanP isDigit)
@@ -75,9 +75,11 @@ jsonObject = JsonObject
                               <*> (ws *> charP ':' <* ws)
                               <*> jsonValue
 
+-- todo no support for exponential notation
 --jsonFloat :: Parser JsonValue
---jsonFloat = JsonFloat <$> undefined
-
+--jsonFloat = f <$> notNull (spanP floatCh)
+--    where f ds = JsonFloat (read ds :: Float)
+--          floatCh ch = isDigit ch || ch == '.'
 
 sepBy :: Parser a -> Parser b -> Parser [b]
 sepBy sep element = ((:) <$> element <*> many (sep *> element)) <|> pure []
