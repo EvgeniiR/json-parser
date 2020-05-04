@@ -4,5 +4,9 @@ import Lib
 
 main :: IO ()
 main = do
-    json <- getLine
-    print (runParser jsonValue json)
+    inp <- getLine
+
+    if inp == "readfile" then
+      do contents <- readFile "./app/json.txt"
+         print (runParser jsonValue contents)
+      else print (runParser jsonValue inp)
