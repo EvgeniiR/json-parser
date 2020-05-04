@@ -40,7 +40,7 @@ instance Applicative Parser where
             Just (input'', f a)
 
 jsonValue :: Parser JsonValue
-jsonValue = jsonNull <|> jsonBool <|> jsonString <|> jsonInteger <|> jsonArray <|> jsonObject
+jsonValue = ws *> (jsonNull <|> jsonBool <|> jsonString <|> jsonInteger <|> jsonArray <|> jsonObject) <* ws
 
 jsonNull :: Parser JsonValue
 jsonNull = JsonNull <$ stringP "null"
